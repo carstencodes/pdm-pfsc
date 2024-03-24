@@ -1,0 +1,19 @@
+[project]
+name = "pdm-pfsc"
+version = "0.1.0"
+description = "Core functionPlug-In Foundation Service Collection)"
+authors = [
+    {name = "Carsten Igel",email = "cig@bite-that-bit.de"},
+]
+dependencies = []
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
