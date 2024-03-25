@@ -1,9 +1,9 @@
 [project]
 name = "pdm-pfsc"
-version = "0.1.0"
+version = "0.9.0"
 description = "Core functionPlug-In Foundation Service Collection)"
 authors = [
-    {name = "Carsten Igel",email = "cig@bite-that-bit.de"},
+    { name = "Carsten Igel", email = "cig@bite-that-bit.de" },
 ]
 dependencies = [
     "tomli-w>=1.0.0",
@@ -12,7 +12,9 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 readme = "README.md"
-license = {text = "MIT"}
+
+[project.license]
+text = "MIT"
 
 [project.license-files]
 paths = [
@@ -23,7 +25,9 @@ paths = [
 homepage = "https://github.com/carstencodes/pdm-pfsc"
 
 [build-system]
-requires = ["pdm-backend"]
+requires = [
+    "pdm-backend",
+]
 build-backend = "pdm.backend"
 
 [tool.pdm]
