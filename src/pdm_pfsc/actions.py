@@ -14,6 +14,7 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable, Mapping
 from typing import Callable, Generic, Protocol, TypeVar, cast
 
 from .hook import HookGenerator
@@ -230,6 +231,10 @@ class ActionRegistry(ABC, Generic[_TContext]):
                 )
                 for hook_info in hook_generator.generate_hook_infos():
                     hook_info.update_parser(child_parser)
+
+    @property
+    def _items(self) -> Mapping[str, type[ActionBase]]:
+        return self.__items
 
     @abstractmethod
     def execute(  # pylint: disable=R0913
