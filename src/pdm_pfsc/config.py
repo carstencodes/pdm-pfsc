@@ -427,7 +427,7 @@ class ConfigNamespace:
 _TConfigValue = TypeVar("_TConfigValue", bool, int, float, str)
 
 
-class _IsMissing(ABC):
+class IsMissing(ABC):
     @abstractmethod
     def __int__(self) -> int:  # pylint: disable=R0801
         """"""
@@ -454,7 +454,7 @@ class _IsMissing(ABC):
         raise NotImplementedError()
 
 
-class MissingValue(Generic[_TConfigValue], _IsMissing):
+class MissingValue(Generic[_TConfigValue], IsMissing):
     """"""
 
     def __init__(self, value: _TConfigValue) -> None:
