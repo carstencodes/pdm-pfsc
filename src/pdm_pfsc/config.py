@@ -209,8 +209,8 @@ class ConfigAccessor(ABC):
 
         return tuple(section_key)
 
-    @abstractmethod
     @property
+    @abstractmethod
     def plugin_config_name(self) -> Iterable[str]:
         """"""
         raise NotImplementedError()
