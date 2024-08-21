@@ -14,7 +14,7 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Callable, Generic, Protocol, TypeVar, cast
 
 from .hook import HookGenerator
