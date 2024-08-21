@@ -6,7 +6,6 @@ authors = [
     { name = "Carsten Igel", email = "cig@bite-that-bit.de" },
 ]
 dependencies = [
-    "tomli-w>=1.0.0",
     "pyproject-metadata>=0.7.1",
     "pdm>=2.12.4",
 ]
