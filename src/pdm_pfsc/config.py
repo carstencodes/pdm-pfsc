@@ -373,7 +373,7 @@ class ConfigItems(OrderedDict):
         use_env_var = kwargs.pop("use_env_var", False)
         if use_env_var:
             kwargs["env_var"] = self.__get_env_var_name(
-                name, kwargs.pop("env_var_prefix", "PDM_PLUGINS_")
+                name, kwargs.pop("env_var_prefix", "PDM_PLUGINS")
             )
         for key in [k for k in kwargs if k not in self.__allowed_values]:
             logger.warning(
@@ -406,7 +406,8 @@ class ConfigItems(OrderedDict):
         """"""
         result = SimpleNamespace()
         for key in self:
-            name = key - self.config_key_prefix
+            name = str(key)
+            name = name.removeprefix(self.config_key_prefix).lstrip(".")
             if "." in name:
                 continue
             result.__dict__[name] = self.__accessor.get_config_value(key)
@@ -415,10 +416,18 @@ class ConfigItems(OrderedDict):
     def __get_env_var_name(self, name: str, env_var_prefix: str) -> str:
         """"""
         path = [env_var_prefix]
-        path.extend(
-            self.__accessor.get_config_section_path(ConfigSection.PLUGINS)[1:]
+        config_values = (
+                           self.__accessor.get_config_section_path(ConfigSection.PLUGINS)
         )
-        path.extend(name)
+        if len(config_values) > 1:
+            config_values = config_values[1:]
+        if len(config_values) == 1:
+            config_values = [config_values[0]]
+        if isinstance(config_values, str):
+            config_values = [config_values]
+
+        path.extend([c.upper() for c in config_values])
+        path.append(name.upper())
 
         return "_".join(path)
 
