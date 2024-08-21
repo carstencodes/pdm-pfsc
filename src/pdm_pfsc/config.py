@@ -13,14 +13,24 @@
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
+from dataclasses import fields
 from enum import Enum, IntEnum, auto
 from functools import cached_property
-from io import BytesIO
 from pathlib import Path
-from typing import Any, Final, Generic, Optional, Protocol, TypeVar, cast
+from types import SimpleNamespace
+from typing import (
+    Any,
+    Final,
+    Generic,
+    Optional,
+    OrderedDict,
+    Protocol,
+    TypeVar,
+    cast,
+)
 
+from pdm.core import ConfigItem
 from pyproject_metadata import StandardMetadata
-from tomli_w import dump as dump_toml
 
 from .logging import logger, traced_function
 
@@ -172,6 +182,7 @@ class ConfigSection(IntEnum):
     PLUGIN_CONFIG = auto()
     BUILD_SYSTEM = auto()
     TOOL_CONFIG = auto()
+    PLUGINS = auto()
 
 
 class Config(Protocol):  # pylint: disable=R0903
@@ -191,23 +202,30 @@ class ConfigAccessor(ABC):
         self.__config = config
         self.__mapping = ConfigMapping(cfg_holder.config)
 
-    def get_config_section_path(self, section: ConfigSection) -> Iterable[str]:
+    def get_config_section_path(
+        self, section: ConfigSection
+    ) -> tuple[str, ...]:
         """"""
-        section_key: Iterable[str] = tuple()
+        section_key: tuple[str, ...] = tuple()
         if section in (
             ConfigSection.TOOL_CONFIG,
             ConfigSection.PLUGIN_CONFIG,
         ):
             sk: list[str] = ["tool", "pdm"]
             if ConfigSection.PLUGIN_CONFIG == section:
+                logger.warning("ConfigSection '%s' is deprecated", section)
                 sk.extend(self.plugin_config_name)
             section_key = tuple(sk)
+        elif ConfigSection.PLUGINS == section:
+            keys: list[str] = ["plugin"]
+            keys.extend(self.plugin_config_name)
+            section_key = tuple(keys)
         elif ConfigSection.BUILD_SYSTEM == section:
             section_key = ("build-system",)
         elif ConfigSection.METADATA == section:
             section_key = ("project",)
 
-        return tuple(section_key)
+        return section_key
 
     @property
     @abstractmethod
@@ -250,59 +268,14 @@ class ConfigAccessor(ABC):
         -------
 
         """
-        config1: ConfigMapping = self.__mapping
-        config2: ConfigMapping = self.get_pyproject_config(
+        pdm_config: ConfigMapping = self.__mapping
+        project_config: ConfigMapping = self.get_pyproject_config(
             ConfigSection.PLUGIN_CONFIG
         )
 
-        return config1.get_config_value(*keys) or config2.get_config_value(
+        return pdm_config.get_config_value(
             *keys
-        )
-
-    @traced_function
-    def set_pyproject_metadata(self, value: Any, *keys: str) -> None:
-        """
-
-        Parameters
-        ----------
-        value: Any :
-
-        *keys: tuple[str, ...] :
-
-
-        Returns
-        -------
-
-        """
-        project_metadata: Final[str] = "project"
-        config: ConfigMapping = self.get_pyproject_config(ConfigSection.ROOT)
-        new_config: ConfigMapping = config.get_config_value(
-            project_metadata, default_value={}, readonly=False
-        )
-        new_config.set_config_value(value, *keys)
-        self._write_config(config)
-
-    def _write_config(self, config: ConfigMapping) -> None:
-        """
-
-        Parameters
-        ----------
-        config: _ConfigMapping :
-
-
-        Returns
-        -------
-
-        """
-        with BytesIO() as buffer:
-            dump_toml(config, buffer)
-
-            with open(self.pyproject_file, "wb+") as file_ptr:
-                file_ptr.write(buffer.getvalue())
-                logger.info(
-                    "Successfully saved configuration to %s",
-                    self.pyproject_file,
-                )
+        ) or project_config.get_config_value(*keys)
 
     @traced_function
     def get_pyproject_config(self, section: ConfigSection) -> ConfigMapping:
@@ -379,6 +352,75 @@ class ConfigAccessor(ABC):
         data: ConfigMapping = self.get_pyproject_config(ConfigSection.ROOT)
         meta: StandardMetadata = StandardMetadata.from_pyproject(data)
         return meta
+
+
+class _SupportsAddConfig(Protocol):  # noqa: R0903
+    """"""
+    def add_config(self, name: str, item: "ConfigItem") -> None: ...
+    """"""
+
+
+class ConfigItems(OrderedDict):
+    """"""
+
+    __allowed_values = [f.name for f in fields(ConfigItem)]
+
+    def __init__(self, accessor: "ConfigAccessor"):
+        self.__accessor = accessor
+
+    def add_config_value(self, name: str, **kwargs: Any) -> None:
+        """"""
+        use_env_var = kwargs.pop("use_env_var", False)
+        if use_env_var:
+            kwargs["env_var"] = self.__get_env_var_name(
+                name, kwargs.pop("env_var_prefix", "PDM_PLUGINS_")
+            )
+        for key in [k for k in kwargs if k not in self.__allowed_values]:
+            logger.warning(
+                (
+                    "Cannot use '%s' as config item value. This is most "
+                    "likely an authoring error. Only the following keys "
+                    "are valid: %s"
+                ),
+                key,
+                ",".join(self.__allowed_values),
+            )
+            kwargs.pop(key)
+
+        config_key = f"{self.config_key_prefix}.{name}"
+        self[config_key] = ConfigItem(**kwargs)
+
+    @property
+    def config_key_prefix(self) -> str:
+        """"""
+        keys = self.__accessor.get_config_section_path(ConfigSection.PLUGINS)
+        key_value = ".".join(keys)
+        return key_value
+
+    def propagate(self, target: "_SupportsAddConfig") -> None:
+        """"""
+        for key, value in self.items():
+            target.add_config(key, value)
+
+    def to_namespace(self) -> "SimpleNamespace":
+        """"""
+        result = SimpleNamespace()
+        for key in self:
+            name = key - self.config_key_prefix
+            if "." in name:
+                continue
+            result.__dict__[name] = self.__accessor.get_config_value(key)
+        return result
+
+    def __get_env_var_name(self, name: str, env_var_prefix: str) -> str:
+        """"""
+        path = [env_var_prefix]
+        path.extend(
+            self.__accessor.get_config_section_path(ConfigSection.PLUGINS)[1:]
+        )
+        path.extend(name)
+
+        return "_".join(path)
 
 
 class ConfigNamespace:
