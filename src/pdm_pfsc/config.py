@@ -29,7 +29,7 @@ from typing import (
     cast,
 )
 
-from pdm.core import ConfigItem
+from pdm.project.config import ConfigItem
 from pyproject_metadata import StandardMetadata
 
 from .logging import logger, traced_function
