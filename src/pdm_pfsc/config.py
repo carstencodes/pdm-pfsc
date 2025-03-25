@@ -12,6 +12,7 @@
 """"""
 import sys
 from abc import ABC, abstractmethod
+from collections import ChainMap
 from collections.abc import Iterable, Mapping
 from dataclasses import fields
 from enum import Enum, IntEnum, auto
@@ -44,6 +45,14 @@ else:
 
 class ConfigMapping(dict[str, Any]):
     """"""
+
+    @staticmethod
+    def _create_from_chain_map(chain_map: ChainMap) -> "ConfigMapping":
+        dict_from_chain_map = {
+            key: chain_map[key] for key in list(chain_map) if key in chain_map
+        }
+
+        return ConfigMapping(dict_from_chain_map)
 
     @traced_function
     def get_config_value(
@@ -200,7 +209,7 @@ class ConfigAccessor(ABC):
 
     def __init__(self, config: Config, cfg_holder: ConfigHolder) -> None:
         self.__config = config
-        self.__mapping = ConfigMapping(cfg_holder.config)
+        self.__mapping = ConfigMapping._create_from_chain_map(cfg_holder.config)
 
     def get_config_section_path(
         self, section: ConfigSection
