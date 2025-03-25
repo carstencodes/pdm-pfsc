@@ -13,12 +13,8 @@ requires-python = ">=3.9"
 readme = "README.md"
 
 [project.license]
+#file = "LICENSE"
 text = "MIT"
-
-[project.license-files]
-paths = [
-    "LICENSE",
-]
 
 [project.urls]
 homepage = "https://github.com/carstencodes/pdm-pfsc"
