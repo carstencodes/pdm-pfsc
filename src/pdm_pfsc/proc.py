@@ -15,8 +15,12 @@
 from os import environ, pathsep
 from pathlib import Path
 from subprocess import run as stdlib_run_process
+from shutil import which as shutil_which
 from sys import platform
 from typing import Optional, Protocol, Union, cast
+
+from pdm.project import Project
+from pdm.environments import BaseEnvironment
 
 from .logging import logger
 
@@ -115,7 +119,7 @@ class CliRunnerMixin(ProcessRunner):
     """"""
 
     def _which(
-        self, exec_name: str, extension: Optional[str] = None
+        self, exec_name: str, extension: Optional[str] = None, project: Optional[Project] = None
     ) -> Optional[Path]:
         """
 
@@ -126,10 +130,24 @@ class CliRunnerMixin(ProcessRunner):
         extension: Optional[str] :
              (Default value = None)
 
+        project: Optional[Project] :
+             (Default value = None)
+
         Returns
         -------
 
         """
+        file_path: "Optional[Path]" = None
+        if extension is None:
+            if project is not None:
+                project_env = project.environment
+                found_path = project_env.which(exec_name)
+            else:
+                found_path = shutil_which(exec_name)
+
+            if found_path is not None:
+                return Path(found_path)
+
         search_path = environ["PATH"]
         logger.debug(
             "Searching for executable '%s' using search path '%s'",
