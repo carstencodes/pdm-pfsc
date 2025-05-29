@@ -184,6 +184,7 @@ class CliRunnerMixin(ProcessRunner):
         *,
         raise_on_exit: bool = False,
         cwd: Optional[Path] = None,
+        env: Optional[dict[str, str]] = None,
     ) -> tuple[int, str, str]:
         """
 
@@ -223,6 +224,7 @@ class CliRunnerMixin(ProcessRunner):
             capture_output=True,
             cwd=cwd,
             encoding="utf-8",
+            env=env,
         )
 
         logger.debug("Process exited with code %d", completed.returncode)
@@ -243,3 +245,4 @@ class CliRunnerMixin(ProcessRunner):
             completed.stdout,
             completed.stderr,
         )
+
