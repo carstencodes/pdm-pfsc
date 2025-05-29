@@ -55,6 +55,7 @@ class _ProcessRunningCallable(Protocol):  # pylint: disable=R0903
         capture_output: bool,
         cwd: Optional[Union[str, Path]],
         encoding: str = "utf-8",
+        env: "Optional[dict[str, str]]" = None,
     ) -> _CompletedProcessLike:
         raise NotImplementedError()
 
@@ -72,6 +73,7 @@ class ProcessRunner:
         capture_output: bool,
         cwd: Optional[Union[str, Path]],
         encoding: str = "utf-8",
+        env: "Optional[dict[str, str]]" = None,
     ) -> _CompletedProcessLike:
         """
 
@@ -104,6 +106,7 @@ class ProcessRunner:
                 capture_output=capture_output,
                 cwd=cwd,
                 encoding=encoding,
+                env=env,
             )
 
         return stdlib_run_process(
@@ -112,6 +115,7 @@ class ProcessRunner:
             capture_output=capture_output,
             cwd=cwd,
             encoding=encoding,
+            env=env,
         )
 
 
