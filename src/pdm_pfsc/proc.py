@@ -215,7 +215,7 @@ class CliRunnerMixin(ProcessRunner):
         logger.debug(
             "Running command '%s' with args [%s]",
             str(executable),
-            ",".join(args),
+            args,
         )
 
         completed: _CompletedProcessLike = self._run_process(
